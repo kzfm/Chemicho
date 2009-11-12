@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+
+use warnings;
+use strict;
+use Chemistry::File::SMILES;
+use Chemistry::Ring 'aromatize_mol';
+
+use FindBin;
+use File::Spec;
+use lib File::Spec->catdir($FindBin::Bin, 'lib');
+use Chemicho;
+
+use Getopt::Long;
+use Data::Dumper;
+
+my $config = File::Spec->catfile($FindBin::Bin, 'chemicho.yaml');
+
+GetOptions('--config=s', \$config, '--version' => \my $version);
+Getopt::Long::Configure("bundling"); # allows -c -v
+
+if ($version) {
+    print "Chemicho version $Chemicho::VERSION\n";
+    exit;
+}
+
+my $chemicho = Chemicho->new();
+$chemicho->load($config);
+
+my $smi = shift or die "$! smiles not found";
+my $react = Chemistry::Mol->parse($smi, format => 'smiles');
+aromatize_mol($react);
+
+my ($prod,@products,@smi_products);
+my $cycle = $chemicho->{Cycle}; # c
+my $generation = $chemicho->{Generation}; # g
+my $prefix = $chemicho->{Prefix}; # g
+
+my ($parent,$total);
+
+#react is 0-Generation
+for(my $j=0;$j<=$generation;$j++){ # if c=3,g=3:
+    $total += $cycle ** $j;       # total (3**0)+(3**1)+(3**2)+(3**3)
+}
+
+$react->name('react0');
+push @products, $react;
+
+my $now = 1; #react is 0-Generation
+while($now < $total) { 
+    # if cycle=2, 2/2=1(not parent), 2/(2+1)=0(parent)
+    #$cycle == 1 ? $parent = $now - 1 : $parent = int(($now-1)/$cycle);
+    my $parent = int(($now-1)/$cycle);
+    my $react = $products[$parent]->clone;
+
+    my $prod = $chemicho->mutate($react);
+
+    if($prod){ # mutation ok
+	$prod->name($prefix . $now);
+	aromatize_mol($prod);
+	my $smi = $prod->print(format => 'smiles', unique => 1, name => 1);
+	if(compare_smiles($smi)){
+	    push @smi_products, $smi;
+	    push @products, $prod;
+	    $now++;
+	}
+    }
+}    
+
+shift @products; # remove original compounds
+print join "\n", @smi_products;
+
+###
+sub compare_smiles {
+    my $smiles = shift;
+	($smiles) = split(/\t/,$smiles);
+    for my $mutate (@smi_products){
+	my $m_smiles;
+	($m_smiles) = split(/\t/,$mutate);
+#	warn "hit\n" if($m_smiles eq $smiles);
+	return undef if($m_smiles eq $smiles);
+    }
+
+    return 1;
+}

@@ -1,0 +1,10 @@
+Plugins:
+  - module: Halogenize
+    weight: 1
+  - module: AddCarbon
+    weight: 2
+  - module: IncreaseBondOrder
+    weight: 0.3
+  - module: DecreaseBondOrder
+    weight: 3
+

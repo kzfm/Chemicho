@@ -1,0 +1,31 @@
+Generation: 5
+Cycle: 3
+Prefix: test
+
+Plugins:
+  - module: AddCarbon
+    weight: 1.5
+  - module: Aromatize
+    weight: 0.8
+  - module: Bulky
+    weight: 3
+  - module: DeAromatize
+    weight: 0.2
+  - module: DecreaseBondOrder
+    weight: 1
+  - module: GenerateRing
+    weight: 0.5
+  - module: Halogenize
+    weight: 1
+  - module: Hydroxylation
+    weight: 3
+  - module: HeteroCyclization
+    weight: 1
+  - module: IncreaseBondOrder
+    weight: 3
+  - module: IntroduceAcid
+    weight: 1
+  - module: Thiophenize
+    weight: 0.5
+
+
